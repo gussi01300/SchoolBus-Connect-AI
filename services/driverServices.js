@@ -1,8 +1,5 @@
-const Database = require("better-sqlite3");
+const db = require("../data/db")
 const bcrypt = require("bcrypt");
-
-//Connect to Database
-const db = new Database("data/data.db");
 
 
 
@@ -24,6 +21,7 @@ async function checkDriverPassword(inputUsername, inputPassword) {
         return false
     }
 }
+
 
 module.exports = {
     getDriverByUsername,

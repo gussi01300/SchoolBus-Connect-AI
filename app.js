@@ -16,7 +16,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/driver', driverRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/driver', driverRouter);
 
 module.exports = app;
