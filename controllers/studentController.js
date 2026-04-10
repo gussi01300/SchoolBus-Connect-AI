@@ -11,9 +11,16 @@ exports.studentLogin = async (req, res) => {
 
     if (passwordStatus) {
       //session
-      res.sendStatus(200);
+      req.session.user = foundUser;
+      return res.status(200).send(foundUser.username);
     }
   } else {
     res.status(401).json({ message: 'Wrong username or password' });
   }
+};
+
+exports.loginStatus = (req, res) => {
+  return req.session.user
+    ? res.status(200).send(req.session.user)
+    : res.status(401).send('Not Authenticated');
 };

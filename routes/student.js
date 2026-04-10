@@ -12,4 +12,6 @@ router.get('/', function (req, res, next) {
 
 router.post('/login', studentController.studentLogin);
 
+router.get('/login/status', studentController.loginStatus);
+
 module.exports = router;

@@ -15,7 +15,7 @@ exports.driverLogin = async (req, res) => {
     if (PasswordStatus) {
       //Session
       req.session.user = foundUser;
-      return res.status(200).send(foundUser);
+      return res.status(200).json({ msg: 'Logged in' });
     }
   } else {
     res.status(401).json({ message: 'Wrong username or password' });
