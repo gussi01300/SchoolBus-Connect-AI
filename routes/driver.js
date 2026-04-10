@@ -8,6 +8,7 @@ router.get('/', function (req, res) {
 });
 
 router.post('/login', driverController.driverLogin);
+router.post('/logout', driverController.driverLogout);
 
 router.get('/loginStatus', driverController.loginStatus);
 

@@ -3,7 +3,9 @@ require('dotenv').config();
 
 //Driver login Function
 exports.driverLogin = async (req, res) => {
-  // return req.session.user ? res.status(409).send("")
+  if (req.session.user) {
+    return res.status(400).send('Already logged in');
+  }
   const inputUsername = req.body.username;
   const inputPassword = req.body.password;
   const foundUser = driverServices.getDriverByUsername(inputUsername);
@@ -32,4 +34,14 @@ exports.loginStatus = (req, res) => {
   return req.session.user
     ? res.status(200).send(req.session.user)
     : res.status(401).send('Not Authenticated');
+};
+
+exports.driverLogout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).send('Failed to logout');
+    }
+    res.clearCookie('connect.sid');
+    return res.status(200).send('Logged out successfully');
+  });
 };
