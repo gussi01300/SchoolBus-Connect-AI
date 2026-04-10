@@ -11,8 +11,12 @@ exports.studentLogin = async (req, res) => {
 
     if (passwordStatus) {
       //session
-      req.session.user = foundUser;
-      return res.status(200).send(foundUser.username);
+      req.session.user = {
+        userId: foundUser.id,
+        username: foundUser.username,
+        role: 'student',
+      };
+      return res.status(200).send(req.session.user);
     }
   } else {
     res.status(401).json({ message: 'Wrong username or password' });

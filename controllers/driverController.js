@@ -14,8 +14,12 @@ exports.driverLogin = async (req, res) => {
     );
     if (PasswordStatus) {
       //Session
-      req.session.user = foundUser;
-      return res.status(200).json({ msg: 'Logged in' });
+      req.session.user = {
+        userId: foundUser.id,
+        username: foundUser.username,
+        role: 'student',
+      };
+      return res.status(200).send(req.session.user);
     }
   } else {
     res.status(401).json({ message: 'Wrong username or password' });
@@ -25,5 +29,5 @@ exports.driverLogin = async (req, res) => {
 exports.loginStatus = (req, res) => {
   return req.session.user
     ? res.status(200).send(req.session.user)
-    : res.status(401).json({ message: 'Not Authenticated' });
+    : res.status(401).send('Not Authenticated');
 };
