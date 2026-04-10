@@ -1,14 +1,14 @@
 const db = require('../data/db');
 const bcrypt = require('bcrypt');
 
-function getDriverByUsername(username) {
-  const stmt = db.prepare('SELECT * FROM drivers WHERE username = ?');
+function getStudentByUsername(username) {
+  const stmt = db.prepare('SELECT * FROM students WHERE username = ?');
   return stmt.get(username);
 }
 
-async function checkDriverPassword(inputUsername, inputPassword) {
+async function checkStudentPassword(inputPassword, inputUsername) {
   const stmt = db.prepare(
-    'SELECT password_hash FROM drivers WHERE username = ?',
+    'SELECT password_hash FROM students WHERE username = ?',
   );
   const hashedPasswordJSON = stmt.get(inputUsername);
   const hashedPassword = hashedPasswordJSON.password_hash;
@@ -23,6 +23,6 @@ async function checkDriverPassword(inputUsername, inputPassword) {
 }
 
 module.exports = {
-  getDriverByUsername,
-  checkDriverPassword,
+  getStudentByUsername,
+  checkStudentPassword,
 };
