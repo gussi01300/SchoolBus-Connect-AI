@@ -3,6 +3,7 @@ require('dotenv').config();
 
 //Driver login Function
 exports.driverLogin = async (req, res) => {
+  // return req.session.user ? res.status(409).send("")
   const inputUsername = req.body.username;
   const inputPassword = req.body.password;
   const foundUser = driverServices.getDriverByUsername(inputUsername);
@@ -14,6 +15,7 @@ exports.driverLogin = async (req, res) => {
     );
     if (PasswordStatus) {
       //Session
+      console.log(req.session.id);
       req.session.user = {
         userId: foundUser.id,
         username: foundUser.username,
