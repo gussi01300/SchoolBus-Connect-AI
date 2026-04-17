@@ -2,11 +2,7 @@ db = require('../data/db');
 require('dotenv').config();
 const data = require('../testUser.json'); //Test User
 
-// function getBusStatus(BusID) {
-//   return db.prepare('SELECT * FROM bus_progress WHERE bus_id = ?').get(BusID);
-// }
-
-async function getTime(startCoords, endCoords) {
+async function getRouteTime(startCoords, endCoords) {
   const API_KEY = process.env.API_KEY;
 
   const params = new URLSearchParams({
@@ -32,11 +28,48 @@ async function getTime(startCoords, endCoords) {
 }
 
 async function calculateETA(user) {
+  //Get current coordinates of bus and student.
+  const { studentCoordinates, busCoordinates } = getCoordinates(user);
+
+  if (studentCoordinates == busCoordinates) {
+    return {
+      status: 'passed',
+      etaSeconds: null,
+    };
+  }
+
   //Get current bus stop and when it was updated.
   const stmtBusLastUpdate = db.prepare('SELECT last_updated_at FROM bus_progress WHERE bus_id = ?');
   const { last_updated_at: lastUpdate } = stmtBusLastUpdate.get(user.bus_id);
 
-  //Get latitude and longitude from current bus stop
+  console.log(
+    `Bus Coordinates: ${busCoordinates} at ${new Date(lastUpdate * 1000).toLocaleString()}, Student Coordinates: ${studentCoordinates}`,
+  );
+
+  const needetTime = await getRouteTime(busCoordinates, studentCoordinates);
+  console.log(`Takes ${needetTime} for the bus to arrive`);
+
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  const timeDifference = currentTime - lastUpdate; // Time difference of the last updated location of the bus and the current Time in seconds.
+
+  const arrivesIn = needetTime - timeDifference;
+
+  if (timeDifference > needetTime) {
+    return {
+      status: 'passed',
+      etaSeconds: null,
+    };
+  } else {
+    return {
+      status: 'upcoming',
+      etaSeconds: arrivesIn,
+    };
+  }
+}
+
+function getCoordinates(user) {
+  //Get bus coordinates
   const stmtCurrentBusCoordinates = db.prepare(
     `SELECT s.latitude, s.longitude
     FROM bus_progress bp 
@@ -47,11 +80,9 @@ async function calculateETA(user) {
   );
 
   const { latitude: currentBusLatitude, longitude: currentBusLongitude } = stmtCurrentBusCoordinates.get(user.bus_id);
-
   const busCoordinates = `${currentBusLongitude},${currentBusLatitude}`;
 
-  //Get students stop location
-
+  //Get students coordinates
   const stmtUserCoordinates = db.prepare(
     `SELECT s.latitude, s.longitude 
     FROM students st 
@@ -60,33 +91,15 @@ async function calculateETA(user) {
   );
 
   const { latitude: userLatitude, longitude: userLongitude } = stmtUserCoordinates.get(user.username);
-
-  // console.log(studentLat);
-  // console.log(studentLng);
-
   const studentCoordinates = `${userLongitude},${userLatitude}`;
 
-  console.log(
-    `Bus Coordinates: ${busCoordinates} at ${new Date(lastUpdate * 1000).toLocaleString()}, Student Coordinates: ${studentCoordinates}`,
-  );
-
-  const needetTime = await getTime(busCoordinates, studentCoordinates);
-  console.log(`Takes ${needetTime} for the bus to arrive`);
-
-  const currentTime = Math.floor(Date.now() / 1000);
-
-  const timeDifference = currentTime - lastUpdate; // Time difference of the last updated location of the bus and the current Time in seconds.
-
-  if (timeDifference > needetTime) {
-    return 'The bus should have already passed your house.';
-  } else {
-    const arrivesIn = needetTime - timeDifference;
-    return `arrives in: ${arrivesIn}`;
-  }
+  return { studentCoordinates: studentCoordinates, busCoordinates: busCoordinates };
 }
 
 async function TEST() {
   console.log(await calculateETA(data));
 }
 
-TEST();
+// TEST();
+
+module.exports = { getRouteTime };

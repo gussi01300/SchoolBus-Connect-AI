@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./bin/www",
     "dev": "nodemon ./bin/www",
-    "setup": "node ./services/busService.js",
+    "setup": "node ./services/setupRoutetimes.js",
     "test": "node test.js"
   },
   "dependencies": {

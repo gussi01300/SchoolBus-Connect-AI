@@ -73,6 +73,18 @@ CREATE TABLE bus_progress (
   FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE CASCADE
 );
 
+CREATE TABLE times (
+    id INTEGER PRIMARY KEY,
+    bus_id INTEGER,
+    from_stop_id INTEGER,
+    to_stop_id INTEGER,
+    duration INTEGER,
+    FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE CASCADE,
+    FOREIGN KEY (from_stop_id) REFERENCES stops(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_stop_id) REFERENCES stops(id) ON DELETE CASCADE
+    UNIQUE (bus_id, from_stop_id, to_stop_id)
+);
+
 -- =========================
 -- OPTIONAL INDEXES
 -- =========================
