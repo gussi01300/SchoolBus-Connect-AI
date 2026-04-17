@@ -2,3 +2,5 @@
 /.vscode
 test.js
 .env
+/data/old_files
+testUser.json

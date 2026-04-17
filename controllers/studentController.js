@@ -7,13 +7,17 @@ exports.studentLogin = async (req, res) => {
   const foundUser = studentServices.getStudentByUsername(inputUsername);
 
   if (foundUser) {
-    const passwordStatus = await studentServices.checkStudentPassword;
+    const passwordStatus = await studentServices.checkStudentPassword(
+      inputPassword,
+      foundUser.username,
+    );
 
     if (passwordStatus) {
       //session
       req.session.user = {
         userId: foundUser.id,
         username: foundUser.username,
+        busID: foundUser.busID,
         role: 'student',
       };
       return res.status(200).send(req.session.user);
