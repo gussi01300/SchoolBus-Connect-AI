@@ -34,7 +34,7 @@ async function getTime(startCoords, endCoords) {
 async function calculateETA(user) {
   //Get current bus stop and when it was updated.
   const stmtBusLastUpdate = db.prepare('SELECT last_updated_at FROM bus_progress WHERE bus_id = ?');
-  const { last_updated_at: dbTime } = stmtBusLastUpdate.get(user.bus_id);
+  const { last_updated_at: lastUpdate } = stmtBusLastUpdate.get(user.bus_id);
 
   //Get latitude and longitude from current bus stop
   const stmtCurrentBusCoordinates = db.prepare(
@@ -66,17 +66,23 @@ async function calculateETA(user) {
 
   const studentCoordinates = `${userLongitude},${userLatitude}`;
 
-  console.log(`Bus Coordinates: ${busCoordinates} at ${dbTime}, Student Coordinates: ${studentCoordinates}`);
+  console.log(
+    `Bus Coordinates: ${busCoordinates} at ${new Date(lastUpdate * 1000).toLocaleString()}, Student Coordinates: ${studentCoordinates}`,
+  );
 
   const needetTime = await getTime(busCoordinates, studentCoordinates);
+  console.log(`Takes ${needetTime} for the bus to arrive`);
 
-  const lastUpdate = new Date(dbTime).getTime(); //Time in Milliseconds
+  const currentTime = Math.floor(Date.now() / 1000);
 
-  const currentTime = Date.now(); //Time in milliseconds
+  const timeDifference = currentTime - lastUpdate; // Time difference of the last updated location of the bus and the current Time in seconds.
 
-  const timeDifference = (currentTime - lastUpdate) / 1000;
-
-  return timeDifference;
+  if (timeDifference > needetTime) {
+    return 'The bus should have already passed your house.';
+  } else {
+    const arrivesIn = needetTime - timeDifference;
+    return `arrives in: ${arrivesIn}`;
+  }
 }
 
 async function TEST() {

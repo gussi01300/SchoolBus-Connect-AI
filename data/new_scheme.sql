@@ -67,10 +67,10 @@ CREATE TABLE students (
 -- Stores the current progress of each bus
 -- =========================
 CREATE TABLE bus_progress (
-    bus_id INTEGER PRIMARY KEY,
-    current_stop_index INTEGER NOT NULL DEFAULT 0,
-    last_updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE CASCADE
+  bus_id INTEGER PRIMARY KEY,
+  current_stop_index INTEGER NOT NULL DEFAULT 0,
+  last_updated_at INTEGER DEFAULT (strftime('%s','now')),
+  FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE CASCADE
 );
 
 -- =========================
