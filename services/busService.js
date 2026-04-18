@@ -96,10 +96,44 @@ function getCoordinates(user) {
   return { studentCoordinates: studentCoordinates, busCoordinates: busCoordinates };
 }
 
-async function TEST() {
-  console.log(await calculateETA(data));
+function calculateNewETA(user) {
+  const stopId = user.stop_id;
+
+  const busStopID = db
+    .prepare(
+      `
+    SELECT bs.stop_id
+    FROM bus_progress bp
+    JOIN bus_stops bs ON bs.stop_index = bp.current_stop_index
+    WHERE bp.bus_id = ?`,
+    )
+    .get(user.bus_id);
+  const routeArray = [];
+  const route = db.prepare('SELECT stop_id FROM bus_stops WHERE bus_id = ? ORDER BY stop_index').all(user.bus_id);
+
+  //Have to cut route so we oly get time for the needed route !!!!!IMPORTANT!°!°°°°°°!!!!!
+
+  const routeLength = route.length;
+  for (let i = 0; i < routeLength; i++) {
+    routeArray.push(route[i].stop_id);
+  }
+  console.log(routeArray);
+  const times = [];
+  for (let i = 0; i < routeLength; i++) {
+    if (routeArray[i + 1]) {
+      const duration = db
+        .prepare('SELECT duration FROM times WHERE from_stop_id = ? AND to_stop_id = ?')
+        .get(routeArray[i], routeArray[i + 1]);
+      times.push(duration.duration);
+    }
+  }
+  console.log(times);
 }
 
-// TEST();
+async function TEST() {
+  calculateNewETA(data);
+}
+
+TEST();
 
 module.exports = { getRouteTime };
