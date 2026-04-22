@@ -11,17 +11,14 @@ exports.driverLogin = async (req, res) => {
   const foundUser = driverServices.getDriverByUsername(inputUsername);
 
   if (foundUser) {
-    const PasswordStatus = await driverServices.checkDriverPassword(
-      foundUser.username,
-      inputPassword,
-    );
+    const PasswordStatus = await driverServices.checkDriverPassword(foundUser.username, inputPassword);
     if (PasswordStatus) {
       //Session
       console.log(req.session.id);
       req.session.user = {
         userId: foundUser.id,
         username: foundUser.username,
-        role: 'student',
+        role: 'driver',
       };
       return res.status(200).send(req.session.user);
     }
@@ -31,9 +28,7 @@ exports.driverLogin = async (req, res) => {
 };
 
 exports.loginStatus = (req, res) => {
-  return req.session.user
-    ? res.status(200).send(req.session.user)
-    : res.status(401).send('Not Authenticated');
+  return req.session.user ? res.status(200).send(req.session.user) : res.status(401).send('Not Authenticated');
 };
 
 exports.driverLogout = (req, res) => {
