@@ -6,10 +6,12 @@ function getStudentByUsername(username) {
   return stmt.get(username);
 }
 
+function getStudentByID(id) {
+  return db.prepare('SELECT * FROM students WHERE id = ?').get(id);
+}
+
 async function checkStudentPassword(inputPassword, inputUsername) {
-  const stmt = db.prepare(
-    'SELECT password_hash FROM students WHERE username = ?',
-  );
+  const stmt = db.prepare('SELECT password_hash FROM students WHERE username = ?');
   const hashedPasswordJSON = stmt.get(inputUsername);
   const hashedPassword = hashedPasswordJSON.password_hash;
 
@@ -25,4 +27,5 @@ async function checkStudentPassword(inputPassword, inputUsername) {
 module.exports = {
   getStudentByUsername,
   checkStudentPassword,
+  getStudentByID,
 };

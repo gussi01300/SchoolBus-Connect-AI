@@ -1,4 +1,5 @@
 const studentServices = require('../services/studentServices');
+const busServices = require('../services/busService');
 
 //student login function
 exports.studentLogin = async (req, res) => {
@@ -7,17 +8,12 @@ exports.studentLogin = async (req, res) => {
   const foundUser = studentServices.getStudentByUsername(inputUsername);
 
   if (foundUser) {
-    const passwordStatus = await studentServices.checkStudentPassword(
-      inputPassword,
-      foundUser.username,
-    );
+    const passwordStatus = await studentServices.checkStudentPassword(inputPassword, foundUser.username);
 
     if (passwordStatus) {
       //session
       req.session.user = {
-        userId: foundUser.id,
-        username: foundUser.username,
-        busID: foundUser.busID,
+        id: foundUser.id,
         role: 'student',
       };
       return res.status(200).send(req.session.user);
@@ -28,9 +24,7 @@ exports.studentLogin = async (req, res) => {
 };
 
 exports.loginStatus = (req, res) => {
-  return req.session.user
-    ? res.status(200).send(req.session.user)
-    : res.status(401).send('Not Authenticated');
+  return req.session.user ? res.status(200).send(req.session.user) : res.status(401).send('Not Authenticated');
 };
 
 exports.studentLogout = (req, res) => {
@@ -41,4 +35,18 @@ exports.studentLogout = (req, res) => {
     res.clearCookie('connect.sid');
     return res.status(200).send('Logged out successfully');
   });
+};
+
+exports.getETA = (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+  if (req.session.user.role !== 'student') {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  console.log('Works');
+  const ETA = busServices.calculateETA(req.session.user);
+  console.log('controllerETA here:');
+  console.log(ETA);
+  return res.status(200).json({ ETA: ETA });
 };

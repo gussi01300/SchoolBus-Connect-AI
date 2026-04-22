@@ -1,6 +1,7 @@
-db = require('../data/db');
+const db = require('../data/db');
 require('dotenv').config();
 const data = require('../testUser.json'); //Test User
+const studentServices = require('../services/studentServices');
 
 async function getRouteTime(startCoords, endCoords) {
   const API_KEY = process.env.API_KEY;
@@ -27,79 +28,37 @@ async function getRouteTime(startCoords, endCoords) {
   return data.features[0].properties.summary.duration; // ETA is in seconds
 }
 
-async function calculateETA(user) {
-  //Get current coordinates of bus and student.
-  const { studentCoordinates, busCoordinates } = getCoordinates(user);
+function getCoordinates(stop_id) {
+  const stmtCoordinates = db.prepare('SELECT latitude, longitude FROM stops WHERE id = ?');
 
-  if (studentCoordinates == busCoordinates) {
-    return {
-      status: 'passed',
-      etaSeconds: null,
-    };
-  }
+  const { latitude: latitude, longitude: longitude } = stmtCoordinates.get(stop_id);
 
-  //Get current bus stop and when it was updated.
+  const coordinates = `${longitude},${latitude}`;
+
+  return coordinates;
+}
+
+function calculateSection(fromStopID, toStopID) {
+  const duration = db
+    .prepare('SELECT duration FROM times WHERE from_stop_id = ? AND to_stop_id = ?')
+    .get(fromStopID, toStopID);
+  console.log(duration);
+  return duration.duration;
+}
+
+function calculateETA(user) {
+  const foundUser = studentServices.getStudentByID(user.id);
+
   const stmtBusLastUpdate = db.prepare('SELECT last_updated_at FROM bus_progress WHERE bus_id = ?');
-  const { last_updated_at: lastUpdate } = stmtBusLastUpdate.get(user.bus_id);
-
-  console.log(
-    `Bus Coordinates: ${busCoordinates} at ${new Date(lastUpdate * 1000).toLocaleString()}, Student Coordinates: ${studentCoordinates}`,
-  );
-
-  const needetTime = await getRouteTime(busCoordinates, studentCoordinates);
-  console.log(`Takes ${needetTime} for the bus to arrive`);
+  const { last_updated_at: lastUpdate } = stmtBusLastUpdate.get(foundUser.bus_id);
 
   const currentTime = Math.floor(Date.now() / 1000);
 
-  const timeDifference = currentTime - lastUpdate; // Time difference of the last updated location of the bus and the current Time in seconds.
+  const passedTime = currentTime - lastUpdate; //Time passed since last bus Update
 
-  const arrivesIn = needetTime - timeDifference;
+  const stopID = foundUser.stop_id;
 
-  if (timeDifference > needetTime) {
-    return {
-      status: 'passed',
-      etaSeconds: null,
-    };
-  } else {
-    return {
-      status: 'upcoming',
-      etaSeconds: arrivesIn,
-    };
-  }
-}
-
-function getCoordinates(user) {
-  //Get bus coordinates
-  const stmtCurrentBusCoordinates = db.prepare(
-    `SELECT s.latitude, s.longitude
-    FROM bus_progress bp 
-    JOIN bus_stops bs ON bp.bus_id = bs.bus_id 
-    AND bp.current_stop_index = bs.stop_index 
-    JOIN stops s ON bs.stop_id = s.id 
-    WHERE bp.bus_id = ?`,
-  );
-
-  const { latitude: currentBusLatitude, longitude: currentBusLongitude } = stmtCurrentBusCoordinates.get(user.bus_id);
-  const busCoordinates = `${currentBusLongitude},${currentBusLatitude}`;
-
-  //Get students coordinates
-  const stmtUserCoordinates = db.prepare(
-    `SELECT s.latitude, s.longitude 
-    FROM students st 
-    JOIN stops s ON st.stop_id = s.id 
-    WHERE st.username = ?`,
-  );
-
-  const { latitude: userLatitude, longitude: userLongitude } = stmtUserCoordinates.get(user.username);
-  const studentCoordinates = `${userLongitude},${userLatitude}`;
-
-  return { studentCoordinates: studentCoordinates, busCoordinates: busCoordinates };
-}
-
-function calculateNewETA(user) {
-  const stopId = user.stop_id;
-
-  const busStopID = db
+  const { stop_id: currentBusStopID } = db
     .prepare(
       `
     SELECT bs.stop_id
@@ -107,33 +66,61 @@ function calculateNewETA(user) {
     JOIN bus_stops bs ON bs.stop_index = bp.current_stop_index
     WHERE bp.bus_id = ?`,
     )
-    .get(user.bus_id);
-  const routeArray = [];
-  const route = db.prepare('SELECT stop_id FROM bus_stops WHERE bus_id = ? ORDER BY stop_index').all(user.bus_id);
+    .get(foundUser.bus_id);
 
-  //Have to cut route so we oly get time for the needed route !!!!!IMPORTANT!°!°°°°°°!!!!!
+  console.log(foundUser.bus_id, currentBusStopID, stopID);
+  const route = db
+    .prepare(
+      `
+    WITH params AS (
+    SELECT ? AS bus_id)
+    SELECT stop_id
+    FROM bus_stops, params
+    WHERE bus_stops.bus_id = params.bus_id
+      AND stop_index BETWEEN
+        (SELECT stop_index FROM bus_stops WHERE bus_id = params.bus_id AND stop_id = ?)
+      AND
+        (SELECT stop_index FROM bus_stops WHERE bus_id = params.bus_id AND stop_id = ?)
+    ORDER BY stop_index;`,
+    )
+    .all(foundUser.bus_id, currentBusStopID, stopID);
+
+  console.log(typeof route);
+  console.log(route);
+  const durations = [];
+
+  const timeNeeded = calculateSection(route[0].stop_id, route[1].stop_id);
+  if (timeNeeded - passedTime < 0) {
+    //Error
+  } else {
+    durations.push(Math.round(timeNeeded - passedTime));
+  }
+
+  route.shift();
+  console.log(route, durations);
 
   const routeLength = route.length;
+  // refactor taht so that after every query, route.shift()
   for (let i = 0; i < routeLength; i++) {
-    routeArray.push(route[i].stop_id);
-  }
-  console.log(routeArray);
-  const times = [];
-  for (let i = 0; i < routeLength; i++) {
-    if (routeArray[i + 1]) {
+    if (route[i + 1]) {
       const duration = db
         .prepare('SELECT duration FROM times WHERE from_stop_id = ? AND to_stop_id = ?')
-        .get(routeArray[i], routeArray[i + 1]);
-      times.push(duration.duration);
+        .get(route[i].stop_id, route[i + 1].stop_id);
+      durations.push(Math.round(duration.duration));
     }
   }
-  console.log(times);
+  console.log(durations);
+
+  let totalTime = 0;
+  for (const time of durations) {
+    totalTime += time;
+  }
+  console.log('HERE');
+  console.log(totalTime);
+  return totalTime;
 }
 
-async function TEST() {
-  calculateNewETA(data);
-}
-
-TEST();
-
-module.exports = { getRouteTime };
+module.exports = {
+  getRouteTime,
+  calculateETA,
+};

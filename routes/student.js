@@ -16,4 +16,6 @@ router.post('/logout', studentController.studentLogout);
 
 router.get('/login/status', studentController.loginStatus);
 
+router.get('/getETA', studentController.getETA);
+
 module.exports = router;
