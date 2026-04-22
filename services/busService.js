@@ -42,7 +42,6 @@ function calculateSection(fromStopID, toStopID) {
   const duration = db
     .prepare('SELECT duration FROM times WHERE from_stop_id = ? AND to_stop_id = ?')
     .get(fromStopID, toStopID);
-  console.log(duration);
   return duration.duration;
 }
 
@@ -68,7 +67,6 @@ function calculateETA(user) {
     )
     .get(foundUser.bus_id);
 
-  console.log(foundUser.bus_id, currentBusStopID, stopID);
   const route = db
     .prepare(
       `
@@ -85,8 +83,6 @@ function calculateETA(user) {
     )
     .all(foundUser.bus_id, currentBusStopID, stopID);
 
-  console.log(typeof route);
-  console.log(route);
   const durations = [];
 
   const timeNeeded = calculateSection(route[0].stop_id, route[1].stop_id);
@@ -96,8 +92,12 @@ function calculateETA(user) {
     durations.push(Math.round(timeNeeded - passedTime));
   }
 
+  //Debugging
+  console.log(`User: ${foundUser.username} with ID: ${foundUser.id}`);
+  console.log(route);
+  console.log(`on the Bus: ${foundUser.bus_id}`);
+
   route.shift();
-  console.log(route, durations);
 
   const routeLength = route.length;
   // refactor taht so that after every query, route.shift()
@@ -109,14 +109,13 @@ function calculateETA(user) {
       durations.push(Math.round(duration.duration));
     }
   }
-  console.log(durations);
 
   let totalTime = 0;
   for (const time of durations) {
     totalTime += time;
   }
-  console.log('HERE');
-  console.log(totalTime);
+
+  console.log(`and has the total time of ${totalTime} until his Bus arrives.`);
   return totalTime;
 }
 
