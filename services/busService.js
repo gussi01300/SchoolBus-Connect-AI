@@ -87,9 +87,9 @@ function calculateETA(user) {
 
   const timeNeeded = calculateSection(route[0].stop_id, route[1].stop_id);
   if (timeNeeded - passedTime < 0) {
-    //Error
+    const message = 'The ETA might not be very accurate becuase of missing data.';
   } else {
-    durations.push(Math.round(timeNeeded - passedTime));
+    const message = 'Bus should be on time.';
   }
 
   //Debugging
@@ -97,7 +97,7 @@ function calculateETA(user) {
   console.log(route);
   console.log(`on the Bus: ${foundUser.bus_id}`);
 
-  route.shift();
+  // route.shift();
 
   const routeLength = route.length;
   // refactor taht so that after every query, route.shift()
@@ -116,8 +116,15 @@ function calculateETA(user) {
   }
 
   console.log(`and has the total time of ${totalTime} until his Bus arrives.`);
-  return totalTime;
+
+  const summary = {
+    time: totalTime,
+    message: message,
+  };
+  return summary;
 }
+
+calculateETA(data);
 
 module.exports = {
   getRouteTime,

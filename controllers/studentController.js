@@ -44,7 +44,12 @@ exports.getETA = (req, res) => {
   if (req.session.user.role !== 'student') {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const ETA = busServices.calculateETA(req.session.user);
-  console.log(ETA);
+  const { time: time, message: message } = busServices.calculateETA(req.session.user);
+
+  return res.status(200).json({
+    ETA: ETA,
+    message: message,
+  });
+
   return res.status(200).json({ ETA: ETA });
 };
