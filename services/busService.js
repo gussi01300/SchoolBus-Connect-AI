@@ -85,11 +85,12 @@ function calculateETA(user) {
 
   const durations = [];
 
+  let message;
   const timeNeeded = calculateSection(route[0].stop_id, route[1].stop_id);
   if (timeNeeded - passedTime < 0) {
-    const message = 'The ETA might not be very accurate becuase of missing data.';
+    message = 'The ETA might not be very accurate because of missing data.';
   } else {
-    const message = 'Bus should be on time.';
+    message = 'Bus should be on time.';
   }
 
   //Debugging
@@ -123,8 +124,6 @@ function calculateETA(user) {
   };
   return summary;
 }
-
-calculateETA(data);
 
 module.exports = {
   getRouteTime,

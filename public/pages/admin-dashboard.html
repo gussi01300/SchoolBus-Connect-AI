@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - SchoolBus Connect</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1a1a2e;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { font-size: 20px; }
+    .logout-btn {
+      padding: 8px 20px;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: #ddd;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .tab.active {
+      background: #1a1a2e;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+      background: white;
+      padding: 25px;
+      border-radius: 0 8px 8px 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .tab-content.active { display: block; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section-header h2 { font-size: 22px; }
+    .add-btn {
+      padding: 10px 20px;
+      background: #00d4ff;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f8f8f8;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: #666;
+    }
+    .actions { display: flex; gap: 8px; }
+    .edit-btn, .delete-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .edit-btn { background: #00d4ff; color: #1a1a2e; }
+    .delete-btn { background: #e94560; color: white; }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 20px; font-size: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #00d4ff;
+      outline: none;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-actions button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .modal-actions .cancel-btn { background: #ddd; color: #333; }
+    .modal-actions .save-btn { background: #00d4ff; color: #1a1a2e; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+    .route-editor {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .route-list {
+      min-height: 100px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .route-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SchoolBus Connect - Admin</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('buses')">Buses</button>
+      <button class="tab" onclick="showTab('stops')">Stops</button>
+      <button class="tab" onclick="showTab('students')">Students</button>
+      <button class="tab" onclick="showTab('drivers')">Drivers</button>
+      <button class="tab" onclick="showTab('routes')">Routes</button>
+    </div>
+
+    <div id="buses" class="tab-content active">
+      <div class="section-header">
+        <h2>Buses</h2>
+        <button class="add-btn" onclick="openBusModal()">+ Add Bus</button>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Bus Number</th><th>Driver</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody id="busesTable"></tbody>
+      </table>
+    </div>
+
+    <div id="stops" class="tab-content">
+      <div class="section-header">
+        <h2>Stops</h2>
+        <button class="add-btn" onclick="openStopModal()">+ Add Stop</button>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Address</th><th>Coordinates</th><th>Actions</th></tr></thead>
+        <tbody id="stopsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="students" class="tab-content">
+      <div class="section-header">
+        <h2>Students</h2>
+        <button class="add-btn" onclick="openStudentModal()">+ Add Student</button>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Bus</th><th>Stop</th><th>Signed Out</th><th>Actions</th></tr></thead>
+        <tbody id="studentsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="drivers" class="tab-content">
+      <div class="section-header">
+        <h2>Drivers</h2>
+        <button class="add-btn" onclick="openDriverModal()">+ Add Driver</button>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Actions</th></tr></thead>
+        <tbody id="driversTable"></tbody>
+      </table>
+    </div>
+
+    <div id="routes" class="tab-content">
+      <div class="section-header">
+        <h2>Bus Routes</h2>
+      </div>
+      <div class="form-group">
+        <label>Select Bus</label>
+        <select id="routeBusSelect" onchange="loadRoute()"></select>
+      </div>
+      <div id="routeEditor"></div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h2 id="modalTitle">Add/Edit</h2>
+      <div id="modalForm"></div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+        <button class="save-btn" onclick="saveModal()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'buses';
+    let buses = [], stops = [], students = [], drivers = [];
+    let editingId = null;
+    let modalType = '';
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/admin/login/status', { credentials: 'include' });
+        if (!res.ok) window.location.href = '/pages/admin-login.html';
+      } catch { window.location.href = '/pages/admin-login.html'; }
+    }
+
+    async function logout() {
+      await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/pages/admin-login.html';
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+      document.getElementById(tab).classList.add('active');
+      currentTab = tab;
+    }
+
+    async function loadBuses() {
+      const res = await fetch('/api/admin/buses', { credentials: 'include' });
+      buses = await res.json();
+      const tbody = document.getElementById('busesTable');
+      tbody.innerHTML = buses.map(b => `
+        <tr>
+          <td>${escapeHtml(b.id)}</td>
+          <td>${escapeHtml(b.bus_number)}</td>
+          <td>${escapeHtml(b.driver_id) || 'None'}</td>
+          <td>${b.active ? 'Yes' : 'No'}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editBus(${b.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteBus(${b.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadStops() {
+      const res = await fetch('/api/admin/stops', { credentials: 'include' });
+      stops = await res.json();
+      const tbody = document.getElementById('stopsTable');
+      tbody.innerHTML = stops.map(s => `
+        <tr>
+          <td>${escapeHtml(s.id)}</td>
+          <td>${escapeHtml(s.stop_name)}</td>
+          <td>${escapeHtml(s.address)}</td>
+          <td>${escapeHtml(s.latitude)}, ${escapeHtml(s.longitude)}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editStop(${s.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteStop(${s.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadStudents() {
+      const res = await fetch('/api/admin/students', { credentials: 'include' });
+      students = await res.json();
+      const tbody = document.getElementById('studentsTable');
+      tbody.innerHTML = students.map(s => `
+        <tr>
+          <td>${escapeHtml(s.id)}</td>
+          <td>${escapeHtml(s.full_name)}</td>
+          <td>${escapeHtml(s.username)}</td>
+          <td>${escapeHtml(s.bus_number)}</td>
+          <td>${escapeHtml(s.stop_name)}</td>
+          <td>${s.signed_out ? 'Yes' : 'No'}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editStudent(${s.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteStudent(${s.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadDrivers() {
+      const res = await fetch('/api/admin/drivers', { credentials: 'include' });
+      drivers = await res.json();
+      const tbody = document.getElementById('driversTable');
+      tbody.innerHTML = drivers.map(d => `
+        <tr>
+          <td>${escapeHtml(d.id)}</td>
+          <td>${escapeHtml(d.full_name)}</td>
+          <td>${escapeHtml(d.username)}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editDriver(${d.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteDriver(${d.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadRoute() {
+      const busId = document.getElementById('routeBusSelect').value;
+      if (!busId) {
+        document.getElementById('routeEditor').innerHTML = '<p>Select a bus to view/edit its route</p>';
+        return;
+      }
+      const res = await fetch(`/api/admin/routes/${busId}`, { credentials: 'include' });
+      const route = await res.json();
+      const stopsRes = await fetch('/api/admin/stops', { credentials: 'include' });
+      const allStops = await stopsRes.json();
+      const assignedStopIds = route.map(r => r.stop_id);
+
+      let html = '<h3 style="margin-bottom:15px">Current Route</h3>';
+      html += '<div class="route-list">';
+      if (route.length === 0) {
+        html += '<p style="color:#888;padding:10px">No stops assigned</p>';
+      } else {
+        route.forEach((r, i) => {
+          html += `<div class="route-item">
+            <span><strong>${i + 1}.</strong> ${escapeHtml(r.stop_name)} - ${escapeHtml(r.address)}</span>
+            <button onclick="removeFromRoute(${busId}, ${r.stop_id})" style="padding:4px 8px;background:#e94560;color:white;border:none;border-radius:4px;cursor:pointer">Remove</button>
+          </div>`;
+        });
+      }
+      html += '</div>';
+
+      html += '<h3 style="margin-bottom:10px">Add Stop to Route</h3>';
+      html += '<select id="addStopSelect" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #ddd;border-radius:6px">';
+      html += '<option value="">Select a stop...</option>';
+      allStops.filter(s => !assignedStopIds.includes(s.id)).forEach(s => {
+        html += `<option value="${s.id}">${escapeHtml(s.stop_name)} - ${escapeHtml(s.address)}</option>`;
+      });
+      html += '</select>';
+      html += '<button onclick="addToRoute()" style="padding:10px 20px;background:#00d4ff;border:none;border-radius:6px;cursor:pointer;font-weight:600">Add Stop</button>';
+
+      document.getElementById('routeEditor').innerHTML = html;
+    }
+
+    async function addToRoute() {
+      const busId = document.getElementById('routeBusSelect').value;
+      const stopId = document.getElementById('addStopSelect').value;
+      if (!busId || !stopId) return;
+      const currentRoute = await fetch(`/api/admin/routes/${busId}`, { credentials: 'include' }).then(r => r.json());
+      const newStopIds = [...currentRoute.map(r => r.stop_id), parseInt(stopId)];
+      await fetch(`/api/admin/routes/${busId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ stopIds: newStopIds })
+      });
+      loadRoute();
+    }
+
+    async function removeFromRoute(busId, stopId) {
+      const currentRoute = await fetch(`/api/admin/routes/${busId}`, { credentials: 'include' }).then(r => r.json());
+      const newStopIds = currentRoute.filter(r => r.stop_id !== stopId).map(r => r.stop_id);
+      await fetch(`/api/admin/routes/${busId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ stopIds: newStopIds })
+      });
+      loadRoute();
+    }
+
+    function openBusModal(id = null) {
+      modalType = 'bus';
+      editingId = id;
+      document.getElementById('modalTitle').textContent = id ? 'Edit Bus' : 'Add Bus';
+      const bus = id ? buses.find(b => b.id === id) : {};
+      document.getElementById('modalForm').innerHTML = `
+        <div class="form-group">
+          <label>Bus Number</label>
+          <input type="text" id="busNumber" value="${escapeHtml(bus.bus_number || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Driver</label>
+          <select id="busDriver">
+            <option value="">None</option>
+            ${drivers.map(d => `<option value="${d.id}" ${bus.driver_id == d.id ? 'selected' : ''}>${escapeHtml(d.full_name)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+      document.getElementById('modal').classList.add('active');
+    }
+
+    function openStopModal(id = null) {
+      modalType = 'stop';
+      editingId = id;
+      document.getElementById('modalTitle').textContent = id ? 'Edit Stop' : 'Add Stop';
+      const stop = id ? stops.find(s => s.id === id) : {};
+      document.getElementById('modalForm').innerHTML = `
+        <div class="form-group">
+          <label>Stop Name</label>
+          <input type="text" id="stopName" value="${escapeHtml(stop.stop_name || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="stopAddress" value="${escapeHtml(stop.address || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" step="any" id="stopLat" value="${escapeHtml(stop.latitude || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" step="any" id="stopLon" value="${escapeHtml(stop.longitude || '')}" required>
+        </div>
+      `;
+      document.getElementById('modal').classList.add('active');
+    }
+
+    function openStudentModal(id = null) {
+      modalType = 'student';
+      editingId = id;
+      document.getElementById('modalTitle').textContent = id ? 'Edit Student' : 'Add Student';
+      const student = id ? students.find(s => s.id === id) : {};
+      document.getElementById('modalForm').innerHTML = `
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="studentName" value="${escapeHtml(student.full_name || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="studentUsername" value="${escapeHtml(student.username || '')}" ${id ? 'readonly' : ''} required>
+        </div>
+        ${!id ? `<div class="form-group">
+          <label>Password</label>
+          <input type="password" id="studentPassword" required>
+        </div>` : ''}
+        <div class="form-group">
+          <label>Bus</label>
+          <select id="studentBus" required>
+            <option value="">Select bus...</option>
+            ${buses.map(b => `<option value="${b.id}" ${student.bus_id == b.id ? 'selected' : ''}>${escapeHtml(b.bus_number)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Stop</label>
+          <select id="studentStop" required>
+            <option value="">Select stop...</option>
+            ${stops.map(s => `<option value="${s.id}" ${student.stop_id == s.id ? 'selected' : ''}>${escapeHtml(s.stop_name)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+      document.getElementById('modal').classList.add('active');
+    }
+
+    function openDriverModal(id = null) {
+      modalType = 'driver';
+      editingId = id;
+      document.getElementById('modalTitle').textContent = id ? 'Edit Driver' : 'Add Driver';
+      const driver = id ? drivers.find(d => d.id === id) : {};
+      document.getElementById('modalForm').innerHTML = `
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="driverName" value="${escapeHtml(driver.full_name || '')}" required>
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="driverUsername" value="${escapeHtml(driver.username || '')}" ${id ? 'readonly' : ''} required>
+        </div>
+        ${!id ? `<div class="form-group">
+          <label>Password</label>
+          <input type="password" id="driverPassword" required>
+        </div>` : ''}
+      `;
+      document.getElementById('modal').classList.add('active');
+    }
+
+    async function saveModal() {
+      let url = '', method = 'POST', body = {};
+      if (modalType === 'bus') {
+        url = editingId ? `/api/admin/buses/${editingId}` : '/api/admin/buses';
+        body = {
+          busNumber: document.getElementById('busNumber').value,
+          driverId: document.getElementById('busDriver').value || null
+        };
+      } else if (modalType === 'stop') {
+        url = editingId ? `/api/admin/stops/${editingId}` : '/api/admin/stops';
+        body = {
+          stopName: document.getElementById('stopName').value,
+          address: document.getElementById('stopAddress').value,
+          latitude: parseFloat(document.getElementById('stopLat').value),
+          longitude: parseFloat(document.getElementById('stopLon').value)
+        };
+      } else if (modalType === 'student') {
+        url = editingId ? `/api/admin/students/${editingId}` : '/api/admin/students';
+        body = {
+          fullName: document.getElementById('studentName').value,
+          username: document.getElementById('studentUsername').value,
+          password: document.getElementById('studentPassword')?.value,
+          busId: parseInt(document.getElementById('studentBus').value),
+          stopId: parseInt(document.getElementById('studentStop').value)
+        };
+      } else if (modalType === 'driver') {
+        url = editingId ? `/api/admin/drivers/${editingId}` : '/api/admin/drivers';
+        body = {
+          fullName: document.getElementById('driverName').value,
+          username: document.getElementById('driverUsername').value,
+          password: document.getElementById('driverPassword')?.value
+        };
+      }
+
+      const res = await fetch(url, {
+        method: editingId ? 'PUT' : method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+
+      closeModal();
+      refreshCurrentTab();
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+      editingId = null;
+    }
+
+    async function editBus(id) { openBusModal(id); }
+    async function editStop(id) { openStopModal(id); }
+    async function editStudent(id) { openStudentModal(id); }
+    async function editDriver(id) { openDriverModal(id); }
+
+    async function deleteBus(id) { if (confirm('Delete this bus?')) { await fetch(`/api/admin/buses/${id}`, { method: 'DELETE', credentials: 'include' }); loadBuses(); }}
+    async function deleteStop(id) { if (confirm('Delete this stop?')) { await fetch(`/api/admin/stops/${id}`, { method: 'DELETE', credentials: 'include' }); loadStops(); }}
+    async function deleteStudent(id) { if (confirm('Delete this student?')) { await fetch(`/api/admin/students/${id}`, { method: 'DELETE', credentials: 'include' }); loadStudents(); }}
+    async function deleteDriver(id) { if (confirm('Delete this driver?')) { await fetch(`/api/admin/drivers/${id}`, { method: 'DELETE', credentials: 'include' }); loadDrivers(); }}
+
+    function refreshCurrentTab() {
+      if (currentTab === 'buses') loadBuses();
+      else if (currentTab === 'stops') loadStops();
+      else if (currentTab === 'students') loadStudents();
+      else if (currentTab === 'drivers') loadDrivers();
+    }
+
+    async function init() {
+      await checkAuth();
+      await loadBuses();
+      await loadStops();
+      await loadStudents();
+      await loadDrivers();
+
+      const busSelect = document.getElementById('routeBusSelect');
+      buses.forEach(b => {
+        busSelect.innerHTML += `<option value="${b.id}">${escapeHtml(b.bus_number)}</option>`;
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

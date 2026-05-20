@@ -24,8 +24,46 @@ async function checkStudentPassword(inputPassword, inputUsername) {
   }
 }
 
+function signOutStudent(studentId, untilDate = null) {
+  const stmt = db.prepare(`
+    UPDATE students
+    SET signed_out = 1, signed_out_until = ?
+    WHERE id = ?
+  `);
+  return stmt.run(untilDate, studentId);
+}
+
+function reactivateStudentIfExpired(studentId) {
+  const student = db.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+  if (student && student.signed_out_until) {
+    const today = new Date().toISOString().split('T')[0];
+    if (student.signed_out_until < today) {
+      db.prepare('UPDATE students SET signed_out = 0, signed_out_until = NULL WHERE id = ?')
+        .run(studentId);
+    }
+  }
+}
+
+function isStudentSignedOut(studentId) {
+  const student = db.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+  if (!student || !student.signed_out) return false;
+
+  if (student.signed_out_until) {
+    const today = new Date().toISOString().split('T')[0];
+    if (student.signed_out_until < today) {
+      db.prepare('UPDATE students SET signed_out = 0, signed_out_until = NULL WHERE id = ?')
+        .run(studentId);
+      return false;
+    }
+  }
+  return true;
+}
+
 module.exports = {
   getStudentByUsername,
   checkStudentPassword,
   getStudentByID,
+  signOutStudent,
+  reactivateStudentIfExpired,
+  isStudentSignedOut,
 };

@@ -6,7 +6,9 @@
     "start": "node ./bin/www",
     "dev": "nodemon ./bin/www",
     "setup": "node ./services/busService.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "build-frontend": "cd frontend && npm install && npm run build",
+    "dev-frontend": "cd frontend && npm run dev"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
